@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canlı Hibrit Akış</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-black flex items-center justify-center">
+    <canvas id="cameraCanvas" class="w-full aspect-video"></canvas>
+
+    <script>
+        const canvas = document.getElementById('cameraCanvas');
+        const ctx = canvas.getContext('2d');
+        const wsUrl = 'ws://localhost:8081';
+
+        let socket;
+        let reconnectInterval = 1000;
+        let firstFrameReceived = false;
+
+        // --- JPEG Çizim Motoru ---
+        const image = new Image();
+        image.onload = () => {
+            if (canvas.width !== image.width || canvas.height !== image.height) {
+                canvas.width = image.width;
+                canvas.height = image.height;
+                if (!firstFrameReceived) {
+                    console.log(`[VERİ] İlk kare alındı (JPEG)! Boyut: ${image.width}x${image.height}`);
+                    firstFrameReceived = true;
+                }
+            }
+            ctx.drawImage(image, 0, 0);
+        };
+
+        // --- YUV Çizim Motoru ---
+        // (Bu fonksiyon YUV verisini alır ve canvas'a çizer)
+        function drawYuvFrame(frameData) {
+            const width = frameData.width;
+            const height = frameData.height;
+            const uvWidth = frameData.uvWidth;
+
+            if (canvas.width !== width || canvas.height !== height) {
+                canvas.width = width;
+                canvas.height = height;
+                if (!firstFrameReceived) {
+                    console.log(`[VERİ] İlk kare alındı (YUV)! Boyut: ${width}x${height}`);
+                    firstFrameReceived = true;
+                }
+            }
+
+            // Base64 verilerini Uint8Array'e dönüştür
+            const yBytes = new Uint8Array(base64ToArrayBuffer(frameData.yData));
+            const uBytes = new Uint8Array(base64ToArrayBuffer(frameData.uData));
+            const vBytes = new Uint8Array(base64ToArrayBuffer(frameData.vData));
+
+            const imageData = ctx.createImageData(width, height);
+            const pixels = imageData.data;
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const yIndex = (y * width) + x;
+                    const uvX = Math.floor(x / 2);
+                    const uvY = Math.floor(y / 2);
+                    const uvIndex = (uvY * uvWidth) + uvX;
+
+                    const yValue = yBytes[yIndex];
+                    const uValue = uBytes[uvIndex];
+                    const vValue = vBytes[uvIndex];
+
+                    const r = yValue + 1.402 * (vValue - 128);
+                    const g = yValue - 0.344136 * (uValue - 128) - 0.714136 * (vValue - 128);
+                    const b = yValue + 1.772 * (uValue - 128);
+
+                    const pixelIndex = yIndex * 4;
+                    pixels[pixelIndex] = Math.max(0, Math.min(255, r));
+                    pixels[pixelIndex + 1] = Math.max(0, Math.min(255, g));
+                    pixels[pixelIndex + 2] = Math.max(0, Math.min(255, b));
+                    pixels[pixelIndex + 3] = 255;
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // Base64 string'i ArrayBuffer'a (Uint8Array) dönüştürme fonksiyonu
+        function base64ToArrayBuffer(base64) {
+            try {
+                const sanitizedBase64 = base64.replace(/\s/g, '');
+                const binary_string = window.atob(sanitizedBase64);
+                const len = binary_string.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binary_string.charCodeAt(i);
+                }
+                return bytes.buffer;
+            } catch (error) {
+                console.error("Base64 çözme hatası:", error);
+                return new ArrayBuffer(0);
+            }
+        }
+
+
+        function connectWebSocket() {
+            if (socket) {
+                socket.close();
+            }
+            console.log(`[WS] Bağlanmaya çalışılıyor: ${wsUrl}`);
+            socket = new WebSocket(wsUrl);
+            firstFrameReceived = false;
+
+            socket.onopen = () => {
+                console.log('[WS] Bağlantı başarılı.');
+                reconnectInterval = 1000;
+            };
+
+            socket.onmessage = async (event) => {
+                let jsonString;
+                try {
+                    if (event.data instanceof Blob) {
+                        jsonString = await event.data.text();
+                    } else {
+                        jsonString = event.data;
+                    }
+
+                    const frameData = JSON.parse(jsonString);
+
+                    // --- DEĞİŞİKLİK: HİBRİT İŞLEME ---
+                    if (frameData.type === 'jpeg' && frameData.frame) {
+                        // 1. JPEG Tipi Geldiyse
+                        image.src = `data:image/jpeg;base64,${frameData.frame}`;
+
+                    } else if (frameData.type === 'yuv') {
+                        // 2. YUV Tipi Geldiyse
+                        drawYuvFrame(frameData);
+
+                    } else {
+                        console.error("Hatalı veri formatı alındı.");
+                    }
+                    // ---------------------------------
+
+                } catch (error) {
+                    console.error('[VERİ HATASI] Gelen veri işlenemedi:', error);
+                }
+            };
+
+            socket.onclose = () => {
+                console.log('[WS] Bağlantı kapandı. Yeniden bağlanılıyor...');
+                setTimeout(connectWebSocket, reconnectInterval);
+                reconnectInterval = Math.min(reconnectInterval * 2, 30000);
+            };
+
+            socket.onerror = (error) => {
+                console.error('[WS HATA] WebSocket bağlantı hatası:', error.message);
+                socket.close();
+            };
+        }
+
+        window.onload = connectWebSocket;
+    </script>
+</body>
+
+</html>
