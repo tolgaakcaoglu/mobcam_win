@@ -82,7 +82,7 @@ flutter build komutu, proje dizinindeki server klasörünü (Node.js kodunu içe
 2.  flutter build windows
     
 3.  Release klasörünüzün son hali şöyle görünmelidir: 
-    
+    ```text
     \\build\\windows\\runner\\Release\\ 
         ├── data\\ 
         ├── server\\ <-- MANUEL KOPYALANAN KLASÖR 
@@ -91,7 +91,7 @@ flutter build komutu, proje dizinindeki server klasörünü (Node.js kodunu içe
         ├── mobcam\_win.exe <-- UYGULAMANIZ 
         ├── flutter\_windows.dll 
         └── (diğer .dll dosyaları)
-    
+    ```
 
 🚀 Kullanım (USB ile)
 ---------------------
