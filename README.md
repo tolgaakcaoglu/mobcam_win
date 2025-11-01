@@ -65,6 +65,13 @@ Bu projeyi derlemek ve çalıştırmak için sisteminizde şunların kurulu olma
 *   **Android SDK (adb):** platform-tools klasörü (içinde adb.exe bulunur) sistem PATH'ine eklenmiş olmalı (Kontrol Paneli adb komutunu çalıştırır).
     
 
+📱 Mobil İstemci
+----------------
+
+Bu PC istemcisinin çalışması için gereken mobil (Android/iOS) uygulamasının kaynak kodlarına aşağıdaki depodan ulaşabilirsiniz:
+
+[**https://github.com/tolgaakcaoglu/mobcam\_mobil**](https://github.com/tolgaakcaoglu/mobcam_mobil)
+
 📦 Kurulum ve Build
 -------------------
 
@@ -74,7 +81,7 @@ flutter build komutu, proje dizinindeki server klasörünü (Node.js kodunu içe
     
 2.  flutter build windows
     
-3.  Release klasörünüzün son hali şöyle görünmelidir:\\build\\windows\\runner\\Release\\ ├── data\\ ├── server\\ <-- MANUEL KOPYALANAN KLASÖR │ ├── client.html │ └── server.js ├── mobcam\_win.exe <-- UYGULAMANIZ ├── flutter\_windows.dll └── (diğer .dll dosyaları)
+3.  Release klasörünüzün son hali şöyle görünmelidir: \\build\\windows\\runner\\Release\\ ├── data\\ ├── server\\ <-- MANUEL KOPYALANAN KLASÖR │ ├── client.html │ └── server.js ├── mobcam\_win.exe <-- UYGULAMANIZ ├── flutter\_windows.dll └── (diğer .dll dosyaları)
     
 
 🚀 Kullanım (USB ile)
@@ -86,7 +93,7 @@ flutter build komutu, proje dizinindeki server klasörünü (Node.js kodunu içe
     
 3.  Telefonunuzu USB ile bilgisayara bağlayın ve USB Hata Ayıklama modunu etkinleştirin.
     
-4.  Flutter Mobil Uygulamasını telefonunuzda başlatın.
+4.  Flutter Mobil Uygulamasını (yukarıdaki linkteki) telefonunuzda başlatın.
     
 5.  Mobil uygulamada **"Akışı Başlat"** butonuna tıklayın.
     
